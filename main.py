@@ -2,9 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-def readCsv(filename):
+def readCsv(material):
     path = "./data/"
-    df = pd.read_csv(path + filename, index_col=0)
+    df = pd.read_csv(path + material + ".csv", index_col=0)
     return df
 
 def getCalibrationValue(df):
@@ -24,6 +24,13 @@ def getCalibrationValue(df):
             break
     return sum(stack_values) / len(stack_values)
 
+def getArea(material):
+    path = "./data/"
+    df = pd.read_csv(path + material + "_plate.csv")
+    width = df["width[mm]"][0]
+    thickness = df["thickness[mm]"][0]
+    return width * thickness
+
 def getStartPoint(df):
     times = df.index.values.tolist()
     analog1 = df["Analog1[V]"]
@@ -41,11 +48,77 @@ def getStartPoint(df):
     df["Analog9[V]"] -= init_val3
     return df[start:]
 
-if __name__ == "__main__":
-    filename = "PET.csv"
-    df = readCsv(filename)
-    epsilon_ratio = getCalibrationValue(df)
-    tensile_value = getStartPoint(df)
+def convertValues(df, area, strain_ratio):
 
-    tensile_value.plot()
+    load_ratio = 2000
+    stroke_ratio = 6
+    initial_length = 35
+
+    df = df.rename(columns={"Analog1[V]": "load [N]", "Analog2[V]": "strain [%]", "Analog9[V]": "stroke [mm]"})
+
+    df["load [N]"] *= load_ratio
+    df["strain [%]"] /= strain_ratio
+    df["stroke [mm]"] *= stroke_ratio
+    df["strain from stroke [%]"] = df["stroke [mm]"] * 100 / initial_length
+    df["stress [MPa]"] = df["load [N]"] / area
+
+    return df
+
+def plotNorminalSSCurve(df, tensile_list):
+    x1 = df["strain [%]"]
+    x2 = df["strain from stroke [%]"]
+    y = df["stress [MPa]"]
+
+    tensile_strength = tensile_list[0]
+    tensile_strain = tensile_list[1]
+    tensile_strain_from_stroke = tensile_list[2]
+
+    plt.figure()
+
+    plt.plot(x1,y, label = "Strain Gauge")
+    plt.plot(tensile_strain, tensile_strength, marker="x", color="red")
+
+    plt.plot(x2,y, label = "Stroke")
+    plt.plot(tensile_strain_from_stroke, tensile_strength, marker="x", color="red")
+
+    plt.title("Norminal Stress - Strain Curve")
+    plt.xlabel("Strain [%]")
+    plt.ylabel("Stress [MPa]")
+    plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
+    plt.grid()
     plt.show()
+
+def plotTrueSSCurve(df):
+    x1 = np.log(1 + df["strain [%]"])
+    x2 = df["strain from stroke [%]"] * (1 + df["strain [%]"])
+    y = df["stress [MPa]"]
+    plt.figure()
+
+    plt.plot(x1,y, label = "Strain Gauge")
+
+    plt.plot(x2,y, label = "Stroke")
+
+    plt.title("True Stress - True Strain Curve")
+    plt.xlabel("Strain [%]")
+    plt.ylabel("Stress [MPa]")
+    plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
+    plt.grid()
+    plt.show()
+
+def getTensileStrength(df):
+    stress = max(df["stress [MPa]"])
+    strain = np.average(df[df["stress [MPa]"] == stress]["strain [%]"])
+    strain_from_stroke = np.average(df[df["stress [MPa]"] == stress]["strain from stroke [%]"])
+    return [stress, strain, strain_from_stroke]
+
+if __name__ == "__main__":
+    material = "PET"
+
+    df = readCsv(material)
+    area = getArea(material)
+    strain_ratio = getCalibrationValue(df)
+    df = getStartPoint(df)
+    df = convertValues(df, area, strain_ratio)
+
+    tensile_list = getTensileStrength(df)
+    plotNorminalSSCurve(df, tensile_list)
