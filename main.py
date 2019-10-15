@@ -89,14 +89,18 @@ def plotNorminalSSCurve(df, tensile_list):
     plt.show()
 
 def plotTrueSSCurve(df):
-    x1 = np.log(1 + df["strain [%]"])
-    x2 = df["strain from stroke [%]"] * (1 + df["strain [%]"])
-    y = df["stress [MPa]"]
+
+    x1 = np.log(1 + df["strain [%]"] / 100) * 100
+    y1 = df["stress [MPa]"] * (1 + df["strain [%]"] / 100)
+
+    x2 = np.log(1 + df["strain from stroke [%]"] /100) * 100
+    y2 = df["stress [MPa]"] * (1 + df["strain from stroke [%]"] / 100)
+
     plt.figure()
 
-    plt.plot(x1,y, label = "Strain Gauge")
+    plt.plot(x1,y1, label = "Strain Gauge")
 
-    plt.plot(x2,y, label = "Stroke")
+    plt.plot(x2,y2, label = "Stroke")
 
     plt.title("True Stress - True Strain Curve")
     plt.xlabel("Strain [%]")
@@ -112,7 +116,7 @@ def getTensileStrength(df):
     return [stress, strain, strain_from_stroke]
 
 if __name__ == "__main__":
-    material = "PET"
+    material = "Ti"
 
     df = readCsv(material)
     area = getArea(material)
@@ -121,4 +125,5 @@ if __name__ == "__main__":
     df = convertValues(df, area, strain_ratio)
 
     tensile_list = getTensileStrength(df)
-    plotNorminalSSCurve(df, tensile_list)
+    # plotNorminalSSCurve(df, tensile_list)
+    plotTrueSSCurve(df)
