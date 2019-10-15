@@ -11,8 +11,7 @@ def readCsv(material):
 def getCalibrationValue(df):
 
     target_values = df["Analog2[V]"]
-    initial_value = target_values[0]
-    threshold = 0.12 + initial_value
+    threshold = 0.18
 
     stack_values = []
     calib_frag = False
@@ -39,13 +38,24 @@ def getStartPoint(df):
     analog1 = df["Analog1[V]"]
     analog2 = df["Analog2[V]"]
     analog9 = df["Analog9[V]"]
+    start_flag = False
+    cnt = 0
+    cnt_threshold = 10
     for (time, val1, val2, val3) in zip(times, analog1, analog2, analog9):
         if((val1 > 0.0) and (val2 > 0.0) and (val3 > 0.0)):
-            start = time
-            init_val1 = val1
-            init_val2 = val2
-            init_val3 = val3
-            break
+            if(not start_flag):
+                start = time
+                init_val1 = val1
+                init_val2 = val2
+                init_val3 = val3
+            start_flag = True
+            if(cnt > cnt_threshold):
+                break
+        else:
+            start_flag = False
+
+        if(start_flag):
+            cnt += 1
     df["Analog1[V]"] -= init_val1
     df["Analog2[V]"] -= init_val2
     df["Analog9[V]"] -= init_val3
@@ -213,11 +223,14 @@ def calcYoungModules(x,y):
 
 
 if __name__ == "__main__":
-    material = "Ti"
+    material = "PET"
+    # materials = ["Al", "Fe_ro", "Fe_water", "Mg", "PET", "Ti"]
 
     df = readCsv(material)
     area = getArea(material)
     strain_ratio = getCalibrationValue(df)
+    print(strain_ratio)
+
     df = getStartPoint(df)
     df = convertValues(df, area, strain_ratio)
 
@@ -232,5 +245,5 @@ if __name__ == "__main__":
     yield_stress_from_stroke, yield_strain_from_stroke = getYieldStressByStrainFromStroke(df, E_list[1])
     Y_list =[[yield_stress, yield_strain], [yield_stress_from_stroke, yield_strain_from_stroke]]
 
-    plotNorminalSSCurve(df, tensile_list, E_list, Y_list)
+    # plotNorminalSSCurve(df, tensile_list, E_list, Y_list)
     # plotTrueSSCurve(df)
