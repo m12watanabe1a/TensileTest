@@ -7,6 +7,7 @@ def readCsv(material):
     df = pd.read_csv(path + material + ".csv", index_col=0)
     return df
 
+
 def getCalibrationValue(df):
 
     target_values = df["Analog2[V]"]
@@ -24,12 +25,14 @@ def getCalibrationValue(df):
             break
     return sum(stack_values) / len(stack_values)
 
+
 def getArea(material):
     path = "./data/"
     df = pd.read_csv(path + material + "_plate.csv")
     width = df["width[mm]"][0]
     thickness = df["thickness[mm]"][0]
     return width * thickness
+
 
 def getStartPoint(df):
     times = df.index.values.tolist()
@@ -48,6 +51,7 @@ def getStartPoint(df):
     df["Analog9[V]"] -= init_val3
     return df[start:]
 
+
 def convertValues(df, area, strain_ratio):
 
     load_ratio = 2000
@@ -64,7 +68,8 @@ def convertValues(df, area, strain_ratio):
 
     return df
 
-def plotNorminalSSCurve(df, tensile_list):
+
+def plotNorminalSSCurve(df, tensile_list, E_list):
     x1 = df["strain [%]"]
     x2 = df["strain from stroke [%]"]
     y = df["stress [MPa]"]
@@ -73,20 +78,32 @@ def plotNorminalSSCurve(df, tensile_list):
     tensile_strain = tensile_list[1]
     tensile_strain_from_stroke = tensile_list[2]
 
+    E_strain = E_list[0][0]
+    E_starin_b = E_list[0][1]
+
+    E_strain_from_stroke = E_list[1][0]
+    E_strain_from_stroke_b = E_list[1][1]
+
     plt.figure()
 
     plt.plot(x1,y, label = "Strain Gauge")
     plt.plot(tensile_strain, tensile_strength, marker="x", color="red")
+    # plt.plot(x1, x1 * E_strain + E_starin_b, linestyle="dashed", color="gray")
+    plt.plot(x1, (x1 - 0.2) * E_strain + E_starin_b, linestyle="dashdot", color="gray")
 
     plt.plot(x2,y, label = "Stroke")
     plt.plot(tensile_strain_from_stroke, tensile_strength, marker="x", color="red")
+    # plt.plot(x2, x2 * E_strain_from_stroke + E_strain_from_stroke_b, linestyle="dashed",color="gray")
+    plt.plot(x2, (x2 - 0.2) * E_strain_from_stroke + E_strain_from_stroke_b, linestyle="dashdot",color="gray")
 
     plt.title("Norminal Stress - Strain Curve")
     plt.xlabel("Strain [%]")
     plt.ylabel("Stress [MPa]")
+    plt.ylim([tensile_strength * (-0.1), tensile_strength * 1.2])
     plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
     plt.show()
+
 
 def plotTrueSSCurve(df):
 
@@ -109,11 +126,50 @@ def plotTrueSSCurve(df):
     plt.grid()
     plt.show()
 
+
 def getTensileStrength(df):
     stress = max(df["stress [MPa]"])
     strain = np.average(df[df["stress [MPa]"] == stress]["strain [%]"])
     strain_from_stroke = np.average(df[df["stress [MPa]"] == stress]["strain from stroke [%]"])
     return [stress, strain, strain_from_stroke]
+
+
+def getYoungModulesLineByStress(df, tensile_strength):
+
+    normianl_stress = df["stress [MPa]"]
+    normianl_strain = df["strain [%]"]
+
+    stress_list = []
+    strain_list = []
+    for (stress, strain) in zip(normianl_stress, normianl_strain):
+        stress_list.append(stress)
+        strain_list.append(strain)
+        if(stress > 0.33 * tensile_strength):
+            break
+
+    return calcYoungModules(np.array(strain_list), np.array(stress_list))
+
+def getYoungModulesLineByStressFromStroke(df, tensile_strength):
+
+    normianl_stress = df["stress [MPa]"]
+    normianl_strain = df["strain from stroke [%]"]
+
+    stress_list = []
+    strain_list = []
+    for (stress, strain) in zip(normianl_stress, normianl_strain):
+        if(stress > 0.1 * tensile_strength):
+            stress_list.append(stress)
+            strain_list.append(strain)
+        if(stress > 0.33 * tensile_strength):
+            break
+
+    return calcYoungModules(np.array(strain_list), np.array(stress_list))
+
+
+def calcYoungModules(x,y):
+    a, b= np.polyfit(x, y, 1)
+    return a, b
+
 
 if __name__ == "__main__":
     material = "Ti"
@@ -125,5 +181,12 @@ if __name__ == "__main__":
     df = convertValues(df, area, strain_ratio)
 
     tensile_list = getTensileStrength(df)
-    # plotNorminalSSCurve(df, tensile_list)
-    plotTrueSSCurve(df)
+    tensile_strength = tensile_list[0]
+
+    E_strain, E_strain_b = getYoungModulesLineByStress(df, tensile_strength)
+    E_strain_from_stroke, E_strain_from_stroke_b = getYoungModulesLineByStressFromStroke(df, tensile_strength)
+
+    E_list = [[E_strain, E_strain_b], [E_strain_from_stroke, E_strain_from_stroke_b]]
+
+    plotNorminalSSCurve(df, tensile_list, E_list)
+    # plotTrueSSCurve(df)
