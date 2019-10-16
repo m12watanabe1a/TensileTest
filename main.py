@@ -4,6 +4,7 @@ import pandas as pd
 
 # 降伏点が明確に存在する材料
 WITH_UPPER_YIELD_POINT = ["Al", "Fe_ro"]
+POLYMERS = ["PET"]
 MATERIAL_MAPPER = {"Al": "Alminium", "Fe_ro": "Annealed Iron", "Fe_water": "Quenched Iron", "Mg": "Magnesium", "PET": "PET", "Ti": "Titanium"}
 
 COLOR = "orange"
@@ -132,6 +133,8 @@ def plotNorminalSSCurve(df, tensile_list, E_list, Y_list, material):
 
     if material in WITH_UPPER_YIELD_POINT:
         plt.plot(x1, x1 * E_strain + E_starin_b, linestyle="dashdot", color="gray")
+    elif material in POLYMERS:
+        pass
     else:
         plt.plot(x1, (x1 - 0.2) * E_strain + E_starin_b, linestyle="dashdot", color="gray")
 
@@ -152,6 +155,8 @@ def plotNorminalSSCurve(df, tensile_list, E_list, Y_list, material):
 
     if material in WITH_UPPER_YIELD_POINT:
         plt.plot(x2, x2 * E_strain_from_stroke + E_strain_from_stroke_b, linestyle="dashdot", color="gray")
+    elif material in POLYMERS:
+        pass
     else:
         plt.plot(x2, (x2 - 0.2) * E_strain_from_stroke + E_strain_from_stroke_b, linestyle="dashdot", color="gray")
 
@@ -302,10 +307,17 @@ def getYieldStressByStrain(df, E_list, material):
     E_strain = E_list[0]
     E_strain_b = E_list[1]
 
+    stress = 0
+    strain = 0
+
     if material in WITH_UPPER_YIELD_POINT:
         df_tmp = df[:int(len(df) * 0.2)]
         stress = max(df_tmp["stress [MPa]"])
         strain = np.average(df_tmp[df_tmp["stress [MPa]"] ==  stress]["strain [%]"])
+
+    elif material in POLYMERS:
+        stress = max(df["stress [MPa]"])
+        strain = np.average(df[df["stress [MPa]"] ==  stress]["strain [%]"])
 
     else:
         df["tmp"] = abs(y - yieldStressLine(x, E_strain, E_strain_b))
@@ -324,9 +336,13 @@ def getYieldStressByStrainFromStroke(df, E_list, material):
     E_strain_b = E_list[1]
 
     if material in WITH_UPPER_YIELD_POINT:
-        df_tmp = df[:int(len(df) * 0.2)]
+        df_tmp = df[:int(len(df) * 0.12)]
         stress = max(df_tmp["stress [MPa]"])
         strain = np.average(df_tmp[df_tmp["stress [MPa]"] ==  stress]["strain from stroke [%]"])
+
+    elif material in POLYMERS:
+        stress = max(df["stress [MPa]"])
+        strain = np.average(df[df["stress [MPa]"] ==  stress]["strain from stroke [%]"])
 
     else:
         df["tmp"] = abs(y - yieldStressLine(x, E_strain, E_strain_b))
@@ -366,8 +382,8 @@ def executeMeasurement(material):
     Y_list =[[yield_stress, yield_strain], [yield_stress_from_stroke, yield_strain_from_stroke]]
 
     plotNorminalSSCurve(df, tensile_list, E_list, Y_list, material)
-    plotTrueSSCurve(df, material)
-    plotLogTrueSSCurve(df, material)
+    # plotTrueSSCurve(df, material)
+    # plotLogTrueSSCurve(df, material)
 
     # plt.show()
 
@@ -376,4 +392,4 @@ if __name__ == "__main__":
     materials = ["Al", "Fe_ro", "Fe_water", "Mg", "PET", "Ti"]
     for material in materials:
         executeMeasurement(material)
-    # plt.show()
+    plt.show()
