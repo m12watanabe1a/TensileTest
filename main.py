@@ -224,8 +224,9 @@ def getYoungModulesLineByStress(df, tensile_strength):
     stress_list = []
     strain_list = []
     for (stress, strain) in zip(normianl_stress, normianl_strain):
-        stress_list.append(stress)
-        strain_list.append(strain)
+        if(stress > 0.1 * tensile_strength):
+            stress_list.append(stress)
+            strain_list.append(strain)
         if(stress > 0.33 * tensile_strength):
             break
 
