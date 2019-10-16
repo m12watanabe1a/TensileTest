@@ -4,7 +4,9 @@ import pandas as pd
 
 # 降伏点が明確に存在する材料
 WITH_UPPER_YIELD_POINT = ["Al", "Fe_ro"]
+MATERIAL_MAPPER = {"Al": "Alminium", "Fe_ro": "Annealed Iron", "Fe_water": "Quenched Iron", "Mg": "Magnesium", "PET": "PET", "Ti": "Titanium"}
 
+COLOR = "orange"
 
 # csvファイル読み込み
 def readCsv(material):
@@ -100,7 +102,7 @@ def convertValues(df, area, strain_ratio):
 
 
 # 公称応力歪み線図の描画
-def plotNorminalSSCurve(df, tensile_list, E_list, Y_list):
+def plotNorminalSSCurve(df, tensile_list, E_list, Y_list, material):
     x1 = df["strain [%]"]
     x2 = df["strain from stroke [%]"]
     y = df["stress [MPa]"]
@@ -123,37 +125,47 @@ def plotNorminalSSCurve(df, tensile_list, E_list, Y_list):
 
     # 歪みゲージ
     plt.figure()
-    plt.plot(x1,y, label = "Strain Gauge")
+    plt.plot(x1,y, label = "Strain Gauge", color=COLOR)
     plt.plot(tensile_strain, tensile_strength, marker="x", color="red")
     plt.plot(yield_strain, yield_stress, marker="x", color="red")
     # plt.plot(x1, x1 * E_strain + E_starin_b, linestyle="dashed", color="gray")
-    plt.plot(x1, (x1 - 0.2) * E_strain + E_starin_b, linestyle="dashdot", color="gray")
-    plt.title("Norminal Stress - Strain Curve")
+
+    if material in WITH_UPPER_YIELD_POINT:
+        plt.plot(x1, x1 * E_strain + E_starin_b, linestyle="dashdot", color="gray")
+    else:
+        plt.plot(x1, (x1 - 0.2) * E_strain + E_starin_b, linestyle="dashdot", color="gray")
+
+    plt.title("Norminal Stress - Strain Curve of " + MATERIAL_MAPPER[material])
     plt.xlabel("Strain [%]")
     plt.ylabel("Stress [MPa]")
     plt.ylim([tensile_strength * (-0.1), tensile_strength * 1.2])
-    plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
+    # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
-    plt.show()
+    # plt.show()
 
     # ストローク
     plt.figure()
-    plt.plot(x2,y, label = "Stroke")
+    plt.plot(x2,y, label = "Stroke", color=COLOR)
     plt.plot(tensile_strain_from_stroke, tensile_strength, marker="x", color="red")
     plt.plot(yield_strain_from_stroke, yield_stress_from_stroke, marker="x", color="red")
     # plt.plot(x2, x2 * E_strain_from_stroke + E_strain_from_stroke_b, linestyle="dashed",color="gray")
-    plt.plot(x2, (x2 - 0.2) * E_strain_from_stroke + E_strain_from_stroke_b, linestyle="dashdot",color="gray")
-    plt.title("Norminal Stress - Strain Curve")
+
+    if material in WITH_UPPER_YIELD_POINT:
+        plt.plot(x2, x2 * E_strain_from_stroke + E_strain_from_stroke_b, linestyle="dashdot", color="gray")
+    else:
+        plt.plot(x2, (x2 - 0.2) * E_strain_from_stroke + E_strain_from_stroke_b, linestyle="dashdot", color="gray")
+
+    plt.title("Norminal Stress - Strain Curve of " + MATERIAL_MAPPER[material])
     plt.xlabel("Strain [%]")
     plt.ylabel("Stress [MPa]")
     plt.ylim([tensile_strength * (-0.1), tensile_strength * 1.2])
-    plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
+    # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
-    plt.show()
+    # plt.show()
 
 
 # 真応力歪み線図の描画
-def plotTrueSSCurve(df):
+def plotTrueSSCurve(df, material):
 
     x1 = np.log(1 + df["strain [%]"] / 100) * 100
     y1 = df["stress [MPa]"] * (1 + df["strain [%]"] / 100)
@@ -163,27 +175,29 @@ def plotTrueSSCurve(df):
 
     # 歪みゲージ
     plt.figure()
-    plt.plot(x1,y1, label = "Strain Gauge")
-    plt.title("True Stress - True Strain Curve")
+    plt.plot(x1,y1, label = "Strain Gauge", color=COLOR)
+    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material])
     plt.xlabel("Strain [%]")
     plt.ylabel("Stress [MPa]")
-    plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
+    plt.ylim([max(y1) * (-0.1), max(y1) * 1.2])
+    # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
-    plt.show()
+    # plt.show()
 
     # ストローク
     plt.figure()
-    plt.plot(x2,y2, label = "Stroke")
-    plt.title("True Stress - True Strain Curve")
+    plt.plot(x2,y2, label = "Stroke", color=COLOR)
+    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material])
     plt.xlabel("Strain [%]")
     plt.ylabel("Stress [MPa]")
-    plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
+    plt.ylim([max(y2) * (-0.1), max(y2) * 1.2])
+    # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
-    plt.show()
+    # plt.show()
 
 
 # 両対数真応力歪み線図の描画
-def plotLogTrueSSCurve(df):
+def plotLogTrueSSCurve(df, material):
 
     x1 = np.log(1 + df["strain [%]"] / 100) * 100
     y1 = df["stress [MPa]"] * (1 + df["strain [%]"] / 100)
@@ -193,27 +207,29 @@ def plotLogTrueSSCurve(df):
 
     # 歪みゲージ
     plt.figure()
-    plt.plot(x1,y1, label = "Strain Gauge")
-    plt.title("True Stress - True Strain Curve")
+    plt.plot(x1,y1, label = "Strain Gauge", color=COLOR)
+    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material])
     plt.xlabel("Strain [%]")
     plt.xscale('log')
     plt.ylabel("Stress [MPa]")
     plt.yscale('log')
-    plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
+    plt.ylim([max(y1) * (-0.1), max(y1) * 1.2])
+    # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
-    plt.show()
+    # plt.show()
 
     # ストローク
     plt.figure()
-    plt.plot(x2,y2, label = "Stroke")
-    plt.title("True Stress - True Strain Curve")
+    plt.plot(x2,y2, label = "Stroke", color=COLOR)
+    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material])
     plt.xlabel("Strain [%]")
     plt.xscale('log')
     plt.ylabel("Stress [MPa]")
     plt.yscale('log')
-    plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
+    plt.ylim([max(y2) * (-0.1), max(y2) * 1.2])
+    # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
-    plt.show()
+    # plt.show()
 
 
 # 耐力の取得
@@ -349,12 +365,15 @@ def executeMeasurement(material):
     yield_stress_from_stroke, yield_strain_from_stroke = getYieldStressByStrainFromStroke(df, E_list[1], material)
     Y_list =[[yield_stress, yield_strain], [yield_stress_from_stroke, yield_strain_from_stroke]]
 
-    plotNorminalSSCurve(df, tensile_list, E_list, Y_list)
-    # plotTrueSSCurve(df)
-    plotLogTrueSSCurve(df)
+    plotNorminalSSCurve(df, tensile_list, E_list, Y_list, material)
+    plotTrueSSCurve(df, material)
+    plotLogTrueSSCurve(df, material)
+
+    # plt.show()
 
 
 if __name__ == "__main__":
     materials = ["Al", "Fe_ro", "Fe_water", "Mg", "PET", "Ti"]
     for material in materials:
         executeMeasurement(material)
+    # plt.show()
