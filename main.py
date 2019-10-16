@@ -49,8 +49,13 @@ def getStartPoint(df):
     start_flag = False
     cnt = 0
     cnt_threshold = 10
+
+    val1_pre = analog1[0]
+    val2_pre = analog2[0]
+    val3_pre = analog9[0]
+
     for (time, val1, val2, val3) in zip(times, analog1, analog2, analog9):
-        if((val1 > 0.0) and (val2 > 0.0) and (val3 > 0.0)):
+        if((val1 - val1_pre > 0.0) and (val2 - val2_pre > 0.0) and (val3 - val3_pre > 0.0)):
             if(not start_flag):
                 start = time
                 init_val1 = val1
@@ -64,9 +69,15 @@ def getStartPoint(df):
 
         if(start_flag):
             cnt += 1
+
+        val1_pre = val1
+        val2_pre = val2
+        val3_pre = val3
+
     df["Analog1[V]"] -= init_val1
     df["Analog2[V]"] -= init_val2
     df["Analog9[V]"] -= init_val3
+
     return df[start:]
 
 
