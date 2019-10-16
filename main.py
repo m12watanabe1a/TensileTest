@@ -235,7 +235,7 @@ def getYoungModulesLineByStress(df, tensile_strength):
     stress_list = []
     strain_list = []
     for (stress, strain) in zip(normianl_stress, normianl_strain):
-        if(stress > 0.1 * tensile_strength):
+        if(stress > 0.04 * tensile_strength):
             stress_list.append(stress)
             strain_list.append(strain)
         if(stress > 0.33 * tensile_strength):
@@ -246,6 +246,7 @@ def getYoungModulesLineByStress(df, tensile_strength):
 
 # ストロークからのヤング率の算出
 # 耐力の算出に使用
+# TODO : 降伏の有無で計算条件を変
 def getYoungModulesLineByStressFromStroke(df, tensile_strength):
 
     normianl_stress = df["stress [MPa]"]
@@ -254,7 +255,7 @@ def getYoungModulesLineByStressFromStroke(df, tensile_strength):
     stress_list = []
     strain_list = []
     for (stress, strain) in zip(normianl_stress, normianl_strain):
-        if(stress > 0.1 * tensile_strength):
+        if(stress > 0.04 * tensile_strength):
             stress_list.append(stress)
             strain_list.append(strain)
         if(stress > 0.33 * tensile_strength):
