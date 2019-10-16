@@ -145,6 +145,30 @@ def plotTrueSSCurve(df):
     plt.show()
 
 
+def plotLogTrueSSCurve(df):
+
+    x1 = np.log(1 + df["strain [%]"] / 100) * 100
+    y1 = df["stress [MPa]"] * (1 + df["strain [%]"] / 100)
+
+    x2 = np.log(1 + df["strain from stroke [%]"] /100) * 100
+    y2 = df["stress [MPa]"] * (1 + df["strain from stroke [%]"] / 100)
+
+    plt.figure()
+
+    plt.plot(x1,y1, label = "Strain Gauge")
+
+    plt.plot(x2,y2, label = "Stroke")
+
+    plt.title("True Stress - True Strain Curve")
+    plt.xlabel("Strain [%]")
+    plt.xscale('log')
+    plt.ylabel("Stress [MPa]")
+    plt.yscale('log')
+    plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
+    plt.grid()
+    plt.show()
+
+
 def getTensileStrength(df):
     stress = max(df["stress [MPa]"])
     strain = np.average(df[df["stress [MPa]"] == stress]["strain [%]"])
@@ -223,7 +247,7 @@ def calcYoungModules(x,y):
 
 
 if __name__ == "__main__":
-    material = "PET"
+    material = "Ti"
     # materials = ["Al", "Fe_ro", "Fe_water", "Mg", "PET", "Ti"]
 
     df = readCsv(material)
@@ -247,3 +271,4 @@ if __name__ == "__main__":
 
     # plotNorminalSSCurve(df, tensile_list, E_list, Y_list)
     # plotTrueSSCurve(df)
+    plotLogTrueSSCurve(df)
