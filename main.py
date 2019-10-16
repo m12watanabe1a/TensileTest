@@ -253,7 +253,6 @@ if __name__ == "__main__":
     df = readCsv(material)
     area = getArea(material)
     strain_ratio = getCalibrationValue(df)
-    print(strain_ratio)
 
     df = getStartPoint(df)
     df = convertValues(df, area, strain_ratio)
