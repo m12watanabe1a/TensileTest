@@ -2,12 +2,18 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
+# 降伏点が明確に存在する材料
+WITH_UPPER_YIELD_POINT = ["Al", "Fe_ro"]
+
+
+# csvファイル読み込み
 def readCsv(material):
     path = "./data/"
     df = pd.read_csv(path + material + ".csv", index_col=0)
     return df
 
 
+# 歪みゲージの値を取得
 def getCalibrationValue(df):
 
     target_values = df["Analog2[V]"]
@@ -25,6 +31,7 @@ def getCalibrationValue(df):
     return sum(stack_values) / len(stack_values)
 
 
+# 断面積情報の取得
 def getArea(material):
     path = "./data/"
     df = pd.read_csv(path + material + "_plate.csv")
@@ -33,6 +40,7 @@ def getArea(material):
     return width * thickness
 
 
+# 引張試験の開始点を取得
 def getStartPoint(df):
     times = df.index.values.tolist()
     analog1 = df["Analog1[V]"]
@@ -62,6 +70,7 @@ def getStartPoint(df):
     return df[start:]
 
 
+# 電圧を物性に変換
 def convertValues(df, area, strain_ratio):
 
     load_ratio = 2000
@@ -79,6 +88,7 @@ def convertValues(df, area, strain_ratio):
     return df
 
 
+# 公称応力歪み線図の描画
 def plotNorminalSSCurve(df, tensile_list, E_list, Y_list):
     x1 = df["strain [%]"]
     x2 = df["strain from stroke [%]"]
@@ -123,6 +133,7 @@ def plotNorminalSSCurve(df, tensile_list, E_list, Y_list):
     plt.show()
 
 
+# 真応力歪み線図の描画
 def plotTrueSSCurve(df):
 
     x1 = np.log(1 + df["strain [%]"] / 100) * 100
@@ -145,6 +156,7 @@ def plotTrueSSCurve(df):
     plt.show()
 
 
+# 両対数真応力歪み線図の描画
 def plotLogTrueSSCurve(df):
 
     x1 = np.log(1 + df["strain [%]"] / 100) * 100
@@ -169,6 +181,8 @@ def plotLogTrueSSCurve(df):
     plt.show()
 
 
+# 耐力の取得
+# TODO : 降伏の有無で計算条件を変更
 def getTensileStrength(df):
     stress = max(df["stress [MPa]"])
     strain = np.average(df[df["stress [MPa]"] == stress]["strain [%]"])
@@ -176,6 +190,8 @@ def getTensileStrength(df):
     return [stress, strain, strain_from_stroke]
 
 
+# ヤング率の計算
+# TODO : 降伏の有無で計算条件を変更
 def getYoungModulesLineByStress(df, tensile_strength):
 
     normianl_stress = df["stress [MPa]"]
@@ -192,6 +208,8 @@ def getYoungModulesLineByStress(df, tensile_strength):
     return calcYoungModules(np.array(strain_list), np.array(stress_list))
 
 
+# ストロークからのヤング率の算出
+# 不必要
 def getYoungModulesLineByStressFromStroke(df, tensile_strength):
 
     normianl_stress = df["stress [MPa]"]
@@ -209,6 +227,7 @@ def getYoungModulesLineByStressFromStroke(df, tensile_strength):
     return calcYoungModules(np.array(strain_list), np.array(stress_list))
 
 
+# 耐力の算出
 def getYieldStressByStrain(df, E_list):
     x = df["strain [%]"]
     y = df["stress [MPa]"]
@@ -246,10 +265,7 @@ def calcYoungModules(x,y):
     return a, b
 
 
-if __name__ == "__main__":
-    material = "Ti"
-    # materials = ["Al", "Fe_ro", "Fe_water", "Mg", "PET", "Ti"]
-
+def executeMeasurement(material):
     df = readCsv(material)
     area = getArea(material)
     strain_ratio = getCalibrationValue(df)
@@ -268,6 +284,12 @@ if __name__ == "__main__":
     yield_stress_from_stroke, yield_strain_from_stroke = getYieldStressByStrainFromStroke(df, E_list[1])
     Y_list =[[yield_stress, yield_strain], [yield_stress_from_stroke, yield_strain_from_stroke]]
 
-    # plotNorminalSSCurve(df, tensile_list, E_list, Y_list)
+    plotNorminalSSCurve(df, tensile_list, E_list, Y_list)
     # plotTrueSSCurve(df)
     plotLogTrueSSCurve(df)
+
+
+if __name__ == "__main__":
+    materials = ["Al", "Fe_ro", "Fe_water", "Mg", "PET", "Ti"]
+    for material in materials:
+        executeMeasurement(material)
