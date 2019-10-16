@@ -103,7 +103,7 @@ def convertValues(df, area, strain_ratio):
 
 
 # 公称応力歪み線図の描画
-def plotNorminalSSCurve(df, tensile_list, E_list, Y_list, material):
+def plotNorminalSSCurve(df, tensile_list, E_list, Y_list, brokenPoint, material):
     x1 = df["strain [%]"]
     x2 = df["strain from stroke [%]"]
     y = df["stress [MPa]"]
@@ -138,7 +138,7 @@ def plotNorminalSSCurve(df, tensile_list, E_list, Y_list, material):
     else:
         plt.plot(x1, (x1 - 0.2) * E_strain + E_starin_b, linestyle="dashdot", color="gray")
 
-    plt.title("Norminal Stress - Strain Curve of " + MATERIAL_MAPPER[material])
+    plt.title("Norminal Stress - Strain Curve of " + MATERIAL_MAPPER[material] + " (Strain Gauge)")
     plt.xlabel("Strain [%]")
     plt.ylabel("Stress [MPa]")
     plt.ylim([tensile_strength * (-0.1), tensile_strength * 1.2])
@@ -160,7 +160,10 @@ def plotNorminalSSCurve(df, tensile_list, E_list, Y_list, material):
     else:
         plt.plot(x2, (x2 - 0.2) * E_strain_from_stroke + E_strain_from_stroke_b, linestyle="dashdot", color="gray")
 
-    plt.title("Norminal Stress - Strain Curve of " + MATERIAL_MAPPER[material])
+    if brokenPoint[0] is not None:
+        plt.plot(brokenPoint[0], brokenPoint[1], marker="x", color="blue")
+
+    plt.title("Norminal Stress - Strain Curve of " + MATERIAL_MAPPER[material] + " (Stroke)")
     plt.xlabel("Strain [%]")
     plt.ylabel("Stress [MPa]")
     plt.ylim([tensile_strength * (-0.1), tensile_strength * 1.2])
@@ -181,7 +184,7 @@ def plotTrueSSCurve(df, material):
     # 歪みゲージ
     plt.figure()
     plt.plot(x1,y1, label = "Strain Gauge", color=COLOR)
-    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material])
+    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material] + " (Strain Gauge)")
     plt.xlabel("Strain [%]")
     plt.ylabel("Stress [MPa]")
     plt.ylim([max(y1) * (-0.1), max(y1) * 1.2])
@@ -192,7 +195,7 @@ def plotTrueSSCurve(df, material):
     # ストローク
     plt.figure()
     plt.plot(x2,y2, label = "Stroke", color=COLOR)
-    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material])
+    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material] + " (Stroke)")
     plt.xlabel("Strain [%]")
     plt.ylabel("Stress [MPa]")
     plt.ylim([max(y2) * (-0.1), max(y2) * 1.2])
@@ -213,7 +216,7 @@ def plotLogTrueSSCurve(df, material):
     # 歪みゲージ
     plt.figure()
     plt.plot(x1,y1, label = "Strain Gauge", color=COLOR)
-    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material])
+    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material] + " (Strain Gauge)")
     plt.xlabel("Strain [%]")
     plt.xscale('log')
     plt.ylabel("Stress [MPa]")
@@ -226,7 +229,7 @@ def plotLogTrueSSCurve(df, material):
     # ストローク
     plt.figure()
     plt.plot(x2,y2, label = "Stroke", color=COLOR)
-    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material])
+    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material] + " (Stroke)")
     plt.xlabel("Strain [%]")
     plt.xscale('log')
     plt.ylabel("Stress [MPa]")
@@ -362,6 +365,106 @@ def calcYoungModules(x,y):
     return a, b
 
 
+def getBrokenPoint(df, tensile_strength, material):
+    df_tmp = df[int(len(df)*0.5):]
+    stress_list = df_tmp["stress [MPa]"]
+    strain_list = df_tmp["strain from stroke [%]"]
+
+    stress_pre = stress_list[0]
+    strain_pre = strain_list[0]
+    if(material in ["Ti", "Mg", "Fe_water", "Fe_ro"]):
+        stress_ratio = tensile_strength * 0.005
+        strain_ratio = 0.1
+        for (stress, strain) in zip(stress_list, strain_list):
+            stress_diff = stress - stress_pre
+            strain_diff = strain - strain_pre
+            if( (stress_diff < - stress_ratio) and (abs(strain_diff) < strain_ratio)):
+                return [strain, stress]
+            stress_pre = stress
+            strain_pre = strain
+    elif material in ["Al"]:
+        stress_ratio = tensile_strength * 0.004
+        strain_ratio = 0.3
+        cnt = 0
+        for (stress, strain) in zip(stress_list, strain_list):
+            stress_diff = stress - stress_pre
+            strain_diff = strain - strain_pre
+            if( (stress_diff < - stress_ratio) and (abs(strain_diff) < strain_ratio)):
+                cnt += 1
+            else:
+                cnt = 0
+            if(cnt > 3):
+                return [strain, stress]
+            stress_pre = stress
+            strain_pre = strain
+    elif material in ["PET"]:
+        stress_ratio = tensile_strength * 0.00412
+        strain_ratio = 2.0
+        cnt = 0
+        for (stress, strain) in zip(stress_list, strain_list):
+            stress_diff = stress - stress_pre
+            strain_diff = strain - strain_pre
+            if( (stress_diff < - stress_ratio) and (abs(strain_diff) < strain_ratio)):
+                cnt += 1
+            else:
+                cnt = 0
+            if(cnt > 2):
+                return [strain, stress]
+            stress_pre = stress
+            strain_pre = strain
+
+    else:
+        return [None, None]
+
+    return [None, None]
+
+
+def printValues(material, tensile_strength, E_list, Y_list, broken_strain):
+    E_strain = E_list[0][0] / 10
+    Y_stress = Y_list[0][0]
+
+    _E_strain_from_stroke = E_list[1][0] / 10
+    Y_stress_from_stroke = Y_list[1][0]
+    print("")
+    print("--------------------")
+    print(MATERIAL_MAPPER[material])
+
+    print("降伏応力（ゲージ）[MPa] :\t%.2f" % Y_stress)
+    print("降伏応力（ストローク）[MPa] :\t%.2f" % Y_stress_from_stroke)
+
+    print("引張応力[MPa] :\t\t\t%.2f" % tensile_strength)
+    print("ヤング率[GPa] :\t\t\t%.2f" % (E_strain / 10))
+    print("破断伸び[%%] :\t\t\t%.2f" % broken_strain)
+    print("--------------------")
+    print("")
+
+def wirteValues(material, tensile_strength, E_list, Y_list, broken_strain):
+    E_strain = E_list[0][0] / 10
+    Y_stress = Y_list[0][0]
+
+    _E_strain_from_stroke = E_list[1][0] / 10
+    Y_stress_from_stroke = Y_list[1][0]
+
+    filename = "./results/" + material + "/info.txt"
+    file = open(filename, 'w')
+    file.write("," + MATERIAL_MAPPER[material] + "\n")
+    file.write("降伏応力（ゲージ）[MPa],%.2f" % Y_stress + "\n")
+    file.write("降伏応力（ストローク）[MPa],%.2f" % Y_stress_from_stroke+"\n")
+
+    file.write("引張応力[MPa],%.2f" % tensile_strength + "\n")
+    file.write("ヤング率[GPa],%.2f" % E_strain + "\n")
+    file.write("破断伸び[%%],%.2f" % broken_strain + "\n")
+    file.close()
+
+
+def convertPointToStrain(brokenPoint, E_strain):
+    if(brokenPoint[0] is None):
+        return 0
+    strain = brokenPoint[0]
+    stress = brokenPoint[1]
+    strain_diff = stress / E_strain
+    return strain - strain_diff
+
 def executeMeasurement(material):
     df = readCsv(material)
     area = getArea(material)
@@ -381,11 +484,19 @@ def executeMeasurement(material):
     yield_stress_from_stroke, yield_strain_from_stroke = getYieldStressByStrainFromStroke(df, E_list[1], material)
     Y_list =[[yield_stress, yield_strain], [yield_stress_from_stroke, yield_strain_from_stroke]]
 
-    plotNorminalSSCurve(df, tensile_list, E_list, Y_list, material)
+    brokenPoint = getBrokenPoint(df, tensile_strength, material)
+    broken_strain = convertPointToStrain(brokenPoint, E_strain)
+
+    # plotNorminalSSCurve(df, tensile_list, E_list, Y_list, brokenPoint, material)
     # plotTrueSSCurve(df, material)
     # plotLogTrueSSCurve(df, material)
 
     # plt.show()
+
+    # printValues(material, tensile_strength, E_list, Y_list, broken_strain)
+    wirteValues(material, tensile_strength, E_list, Y_list, broken_strain)
+    print(material)
+    print(E_list)
 
 
 if __name__ == "__main__":
