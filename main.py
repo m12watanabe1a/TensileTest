@@ -104,6 +104,7 @@ def convertValues(df, area, strain_ratio):
 
 # 公称応力歪み線図の描画
 def plotNorminalSSCurve(df, tensile_list, E_list, Y_list, brokenPoint, material):
+    path = "./results/" + material + "/"
     x1 = df["strain [%]"]
     x2 = df["strain from stroke [%]"]
     y = df["stress [MPa]"]
@@ -144,6 +145,7 @@ def plotNorminalSSCurve(df, tensile_list, E_list, Y_list, brokenPoint, material)
     plt.ylim([tensile_strength * (-0.1), tensile_strength * 1.2])
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
+    plt.savefig(path + 'NSSG.png')
     # plt.show()
 
     # ストローク
@@ -169,11 +171,13 @@ def plotNorminalSSCurve(df, tensile_list, E_list, Y_list, brokenPoint, material)
     plt.ylim([tensile_strength * (-0.1), tensile_strength * 1.2])
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
+    plt.savefig(path + 'NSSS.png')
     # plt.show()
 
 
 # 真応力歪み線図の描画
 def plotTrueSSCurve(df, material):
+    path = "./results/" + material + "/"
 
     x1 = np.log(1 + df["strain [%]"] / 100) * 100
     y1 = df["stress [MPa]"] * (1 + df["strain [%]"] / 100)
@@ -190,6 +194,7 @@ def plotTrueSSCurve(df, material):
     plt.ylim([max(y1) * (-0.1), max(y1) * 1.2])
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
+    plt.savefig(path + 'TSSG.png')
     # plt.show()
 
     # ストローク
@@ -201,11 +206,13 @@ def plotTrueSSCurve(df, material):
     plt.ylim([max(y2) * (-0.1), max(y2) * 1.2])
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
+    plt.savefig(path + 'TSSS.png')
     # plt.show()
 
 
 # 両対数真応力歪み線図の描画
 def plotLogTrueSSCurve(df, material):
+    path = "./results/" + material + "/"
 
     x1 = np.log(1 + df["strain [%]"] / 100) * 100
     y1 = df["stress [MPa]"] * (1 + df["strain [%]"] / 100)
@@ -221,9 +228,9 @@ def plotLogTrueSSCurve(df, material):
     plt.xscale('log')
     plt.ylabel("Stress [MPa]")
     plt.yscale('log')
-    plt.ylim([max(y1) * (-0.1), max(y1) * 1.2])
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
+    plt.savefig(path + 'LTSSG.png')
     # plt.show()
 
     # ストローク
@@ -234,9 +241,9 @@ def plotLogTrueSSCurve(df, material):
     plt.xscale('log')
     plt.ylabel("Stress [MPa]")
     plt.yscale('log')
-    plt.ylim([max(y2) * (-0.1), max(y2) * 1.2])
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
+    plt.savefig(path + 'LTSSS.png')
     # plt.show()
 
 
@@ -487,20 +494,17 @@ def executeMeasurement(material):
     brokenPoint = getBrokenPoint(df, tensile_strength, material)
     broken_strain = convertPointToStrain(brokenPoint, E_strain)
 
-    # plotNorminalSSCurve(df, tensile_list, E_list, Y_list, brokenPoint, material)
-    # plotTrueSSCurve(df, material)
-    # plotLogTrueSSCurve(df, material)
+    plotNorminalSSCurve(df, tensile_list, E_list, Y_list, brokenPoint, material)
+    plotTrueSSCurve(df, material)
+    plotLogTrueSSCurve(df, material)
 
     # plt.show()
 
     # printValues(material, tensile_strength, E_list, Y_list, broken_strain)
-    wirteValues(material, tensile_strength, E_list, Y_list, broken_strain)
-    print(material)
-    print(E_list)
-
+    # wirteValues(material, tensile_strength, E_list, Y_list, broken_strain)
 
 if __name__ == "__main__":
     materials = ["Al", "Fe_ro", "Fe_water", "Mg", "PET", "Ti"]
     for material in materials:
         executeMeasurement(material)
-    plt.show()
+    # plt.show()
