@@ -227,69 +227,97 @@ def getTensileStrength(df):
 
 # ヤング率の計算
 # TODO : 降伏の有無で計算条件を変更
-def getYoungModulesLineByStress(df, tensile_strength):
+def getYoungModulesLineByStress(df, tensile_strength, material):
 
     normianl_stress = df["stress [MPa]"]
     normianl_strain = df["strain [%]"]
 
     stress_list = []
     strain_list = []
-    for (stress, strain) in zip(normianl_stress, normianl_strain):
-        if(stress > 0.04 * tensile_strength):
-            stress_list.append(stress)
-            strain_list.append(strain)
-        if(stress > 0.33 * tensile_strength):
-            break
+    if material in WITH_UPPER_YIELD_POINT:
+        df_tmp = df[:int(len(df) * 0.2)]
+        yield_stress = max(df_tmp["stress [MPa]"])
+        yield_strain = np.average(df_tmp[df_tmp["stress [MPa]"] ==  yield_stress]["strain [%]"])
+        strain_list = [normianl_strain[0], yield_strain]
+        stress_list = [normianl_stress[0], yield_stress]
 
+    else:
+        for (stress, strain) in zip(normianl_stress, normianl_strain):
+            if(stress > 0.04 * tensile_strength):
+                stress_list.append(stress)
+                strain_list.append(strain)
+            if(stress > 0.33 * tensile_strength):
+                break
     return calcYoungModules(np.array(strain_list), np.array(stress_list))
 
 
 # ストロークからのヤング率の算出
 # 耐力の算出に使用
-# TODO : 降伏の有無で計算条件を変
-def getYoungModulesLineByStressFromStroke(df, tensile_strength):
+def getYoungModulesLineByStressFromStroke(df, tensile_strength, material):
 
     normianl_stress = df["stress [MPa]"]
     normianl_strain = df["strain from stroke [%]"]
 
     stress_list = []
     strain_list = []
-    for (stress, strain) in zip(normianl_stress, normianl_strain):
-        if(stress > 0.04 * tensile_strength):
-            stress_list.append(stress)
-            strain_list.append(strain)
-        if(stress > 0.33 * tensile_strength):
-            break
+
+    if material in WITH_UPPER_YIELD_POINT:
+        df_tmp = df[:int(len(df) * 0.2)]
+        yield_stress = max(df_tmp["stress [MPa]"])
+        yield_strain = np.average(df_tmp[df_tmp["stress [MPa]"] ==  yield_stress]["strain from stroke [%]"])
+        strain_list = [normianl_strain[0], yield_strain]
+        stress_list = [normianl_stress[0], yield_stress]
+    else:
+        for (stress, strain) in zip(normianl_stress, normianl_strain):
+            if(stress > 0.04 * tensile_strength):
+                stress_list.append(stress)
+                strain_list.append(strain)
+            if(stress > 0.33 * tensile_strength):
+                break
 
     return calcYoungModules(np.array(strain_list), np.array(stress_list))
 
 
 # 耐力の算出
-def getYieldStressByStrain(df, E_list):
+def getYieldStressByStrain(df, E_list, material):
     x = df["strain [%]"]
     y = df["stress [MPa]"]
 
     E_strain = E_list[0]
     E_strain_b = E_list[1]
 
-    df["tmp"] = abs(y - yieldStressLine(x, E_strain, E_strain_b))
-    tmp = df[df["tmp"] == min(df["tmp"])]
-    strain = np.average(tmp["strain [%]"])
-    stress = np.average(tmp["stress [MPa]"])
+    if material in WITH_UPPER_YIELD_POINT:
+        df_tmp = df[:int(len(df) * 0.2)]
+        stress = max(df_tmp["stress [MPa]"])
+        strain = np.average(df_tmp[df_tmp["stress [MPa]"] ==  stress]["strain [%]"])
+
+    else:
+        df["tmp"] = abs(y - yieldStressLine(x, E_strain, E_strain_b))
+        tmp = df[df["tmp"] == min(df["tmp"])]
+        strain = np.average(tmp["strain [%]"])
+        stress = np.average(tmp["stress [MPa]"])
+
     return [stress, strain]
 
 
-def getYieldStressByStrainFromStroke(df, E_list):
+def getYieldStressByStrainFromStroke(df, E_list, material):
     x = df["strain from stroke [%]"]
     y = df["stress [MPa]"]
 
     E_strain = E_list[0]
     E_strain_b = E_list[1]
 
-    df["tmp"] = abs(y - yieldStressLine(x, E_strain, E_strain_b))
-    tmp = df[df["tmp"] == min(df["tmp"])]
-    strain = np.average(tmp["strain from stroke [%]"])
-    stress = np.average(tmp["stress [MPa]"])
+    if material in WITH_UPPER_YIELD_POINT:
+        df_tmp = df[:int(len(df) * 0.2)]
+        stress = max(df_tmp["stress [MPa]"])
+        strain = np.average(df_tmp[df_tmp["stress [MPa]"] ==  stress]["strain from stroke [%]"])
+
+    else:
+        df["tmp"] = abs(y - yieldStressLine(x, E_strain, E_strain_b))
+        tmp = df[df["tmp"] == min(df["tmp"])]
+        strain = np.average(tmp["strain from stroke [%]"])
+        stress = np.average(tmp["stress [MPa]"])
+
     return [stress, strain]
 
 
@@ -313,12 +341,12 @@ def executeMeasurement(material):
     tensile_list = getTensileStrength(df)
     tensile_strength = tensile_list[0]
 
-    E_strain, E_strain_b = getYoungModulesLineByStress(df, tensile_strength)
-    E_strain_from_stroke, E_strain_from_stroke_b = getYoungModulesLineByStressFromStroke(df, tensile_strength)
+    E_strain, E_strain_b = getYoungModulesLineByStress(df, tensile_strength, material)
+    E_strain_from_stroke, E_strain_from_stroke_b = getYoungModulesLineByStressFromStroke(df, tensile_strength, material)
     E_list = [[E_strain, E_strain_b], [E_strain_from_stroke, E_strain_from_stroke_b]]
 
-    yield_stress, yield_strain = getYieldStressByStrain(df, E_list[0])
-    yield_stress_from_stroke, yield_strain_from_stroke = getYieldStressByStrainFromStroke(df, E_list[1])
+    yield_stress, yield_strain = getYieldStressByStrain(df, E_list[0], material)
+    yield_stress_from_stroke, yield_strain_from_stroke = getYieldStressByStrainFromStroke(df, E_list[1], material)
     Y_list =[[yield_stress, yield_strain], [yield_stress_from_stroke, yield_strain_from_stroke]]
 
     plotNorminalSSCurve(df, tensile_list, E_list, Y_list)
