@@ -211,7 +211,7 @@ def plotTrueSSCurve(df, material):
 
 
 # 両対数真応力歪み線図の描画
-def plotLogTrueSSCurve(df, material):
+def plotLogTrueSSCurve(df, linePoint, material):
     path = "./results/" + material + "/"
 
     x1 = np.log(1 + df["strain [%]"] / 100) * 100
@@ -236,6 +236,7 @@ def plotLogTrueSSCurve(df, material):
     # ストローク
     plt.figure()
     plt.plot(x2,y2, label = "Stroke", color=COLOR)
+    plt.plot(linePoint[0],linePoint[1], linestyle = "dashed", color="gray" )
     plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material] + " (Stroke)")
     plt.xlabel("Strain [%]")
     plt.xscale('log')
@@ -279,7 +280,7 @@ def getYoungModulesLineByStress(df, tensile_strength, material):
                 strain_list.append(strain)
             if(stress > 0.33 * tensile_strength):
                 break
-    return calcYoungModules(np.array(strain_list), np.array(stress_list))
+    return calcLine(np.array(strain_list), np.array(stress_list))
 
 
 # ストロークからのヤング率の算出
@@ -306,7 +307,7 @@ def getYoungModulesLineByStressFromStroke(df, tensile_strength, material):
             if(stress > 0.33 * tensile_strength):
                 break
 
-    return calcYoungModules(np.array(strain_list), np.array(stress_list))
+    return calcLine(np.array(strain_list), np.array(stress_list))
 
 
 # 耐力の算出
@@ -367,7 +368,7 @@ def yieldStressLine(x, a,b):
     return a * (x - 0.2) + b
 
 
-def calcYoungModules(x,y):
+def calcLine(x,y):
     a, b= np.polyfit(x, y, 1)
     return a, b
 
@@ -426,7 +427,7 @@ def getBrokenPoint(df, tensile_strength, material):
     return [None, None]
 
 
-def printValues(material, tensile_strength, E_list, Y_list, broken_strain):
+def printValues(material, tensile_strength, E_list, Y_list, broken_strain, wh_index):
     E_strain = E_list[0][0] / 10
     Y_stress = Y_list[0][0]
 
@@ -442,17 +443,18 @@ def printValues(material, tensile_strength, E_list, Y_list, broken_strain):
     print("引張応力[MPa] :\t\t\t%.2f" % tensile_strength)
     print("ヤング率[GPa] :\t\t\t%.2f" % (E_strain / 10))
     print("破断伸び[%%] :\t\t\t%.2f" % broken_strain)
+    print("加工硬化指数[-] :\t\t%.3f" % wh_index)
     print("--------------------")
     print("")
 
-def wirteValues(material, tensile_strength, E_list, Y_list, broken_strain):
+def wirteValues(material, tensile_strength, E_list, Y_list, broken_strain, wh_index):
     E_strain = E_list[0][0] / 10
     Y_stress = Y_list[0][0]
 
     _E_strain_from_stroke = E_list[1][0] / 10
     Y_stress_from_stroke = Y_list[1][0]
 
-    filename = "./results/" + material + "/info."
+    filename = "./results/" + material + "/info.csv"
     file = open(filename, 'w')
     file.write("," + MATERIAL_MAPPER[material] + "\n")
     file.write("降伏応力（ゲージ）[MPa],%.2f" % Y_stress + "\n")
@@ -461,6 +463,7 @@ def wirteValues(material, tensile_strength, E_list, Y_list, broken_strain):
     file.write("引張応力[MPa],%.2f" % tensile_strength + "\n")
     file.write("ヤング率[GPa],%.2f" % E_strain + "\n")
     file.write("破断伸び[%%],%.2f" % broken_strain + "\n")
+    file.write("加工硬化指数[-],%.3f" % wh_index + "\n")
     file.close()
 
 
@@ -472,6 +475,50 @@ def convertPointToStrain(brokenPoint, E_strain):
     strain_diff = stress / E_strain
     return strain - strain_diff
 
+
+def getWHindex(df, material, yield_strain, tensile_strain):
+    strain_offset = (tensile_strain - yield_strain) * 0.1
+    if material == "Al":
+        measurement_range = [yield_strain + strain_offset, tensile_strain - strain_offset]
+    elif material == "Fe_ro":
+        measurement_range = [yield_strain + 2 * strain_offset, tensile_strain - strain_offset]
+    elif material == "Fe_water":
+        measurement_range = [yield_strain + strain_offset, tensile_strain - strain_offset]
+    elif material == "Mg":
+        measurement_range = [yield_strain + strain_offset, tensile_strain - strain_offset]
+    elif material == "PET":
+        measurement_range = [9, 10.22]
+    elif material == "Ti":
+        measurement_range = [yield_strain + strain_offset, tensile_strain - strain_offset]
+    else:
+        return None
+
+    stress_list = df["stress [MPa]"] * (1 + df["strain from stroke [%]"] / 100)
+    strain_list = np.log(1 + df["strain from stroke [%]"] /100) * 100
+    stress_line = []
+    strain_line = []
+
+    for (stress, strain) in zip(stress_list, strain_list):
+        if(strain > min(measurement_range)):
+            stress_line.append(stress)
+            strain_line.append(strain)
+            if(strain > max(measurement_range)):
+                break
+        else:
+            pass
+
+    stress_line = np.log10(stress_line)
+    strain_line = np.log10(strain_line)
+
+    n, b = calcLine(strain_line, stress_line)
+
+    linePoint = [np.power(10, [strain_line[0], strain_line[len(strain_line)-1]]), np.power(10, [n*strain_line[0] + b, n*strain_line[len(strain_line) -1] + b])]
+
+
+    return [n, linePoint]
+
+
+
 def executeMeasurement(material):
     df = readCsv(material)
     area = getArea(material)
@@ -482,6 +529,7 @@ def executeMeasurement(material):
 
     tensile_list = getTensileStrength(df)
     tensile_strength = tensile_list[0]
+    tensile_strain_from_stroke = tensile_list[2]
 
     E_strain, E_strain_b = getYoungModulesLineByStress(df, tensile_strength, material)
     E_strain_from_stroke, E_strain_from_stroke_b = getYoungModulesLineByStressFromStroke(df, tensile_strength, material)
@@ -494,17 +542,24 @@ def executeMeasurement(material):
     brokenPoint = getBrokenPoint(df, tensile_strength, material)
     broken_strain = convertPointToStrain(brokenPoint, E_strain)
 
+    wh_index, linePoint = getWHindex(df, material, yield_strain_from_stroke, tensile_strain_from_stroke)
+
     plotNorminalSSCurve(df, tensile_list, E_list, Y_list, brokenPoint, material)
+    plt.close()
     plotTrueSSCurve(df, material)
-    plotLogTrueSSCurve(df, material)
+    plt.close()
+    plotLogTrueSSCurve(df, linePoint, material)
+    plt.close()
+
 
     # plt.show()
 
-    # printValues(material, tensile_strength, E_list, Y_list, broken_strain)
-    # wirteValues(material, tensile_strength, E_list, Y_list, broken_strain)
+    # printValues(material, tensile_strength, E_list, Y_list, broken_strain, wh_index)
+    wirteValues(material, tensile_strength, E_list, Y_list, broken_strain, wh_index)
 
 if __name__ == "__main__":
     materials = ["Al", "Fe_ro", "Fe_water", "Mg", "PET", "Ti"]
     for material in materials:
         executeMeasurement(material)
+    # executeMeasurement("Fe_ro")
     # plt.show()
