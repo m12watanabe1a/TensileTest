@@ -452,7 +452,7 @@ def wirteValues(material, tensile_strength, E_list, Y_list, broken_strain):
     _E_strain_from_stroke = E_list[1][0] / 10
     Y_stress_from_stroke = Y_list[1][0]
 
-    filename = "./results/" + material + "/info.txt"
+    filename = "./results/" + material + "/info."
     file = open(filename, 'w')
     file.write("," + MATERIAL_MAPPER[material] + "\n")
     file.write("降伏応力（ゲージ）[MPa],%.2f" % Y_stress + "\n")
