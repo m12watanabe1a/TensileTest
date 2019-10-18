@@ -135,17 +135,17 @@ def plotNorminalSSCurve(df, tensile_list, E_list, Y_list, brokenPoint, material)
     if material in WITH_UPPER_YIELD_POINT:
         plt.plot(x1, x1 * E_strain + E_starin_b, linestyle="dashdot", color="gray")
     elif material in POLYMERS:
-        pass
+        plt.plot([0, 0.8*tensile_strain], [0,0.8*E_strain * tensile_strain], linestyle="dashdot", color="gray")
     else:
         plt.plot(x1, (x1 - 0.2) * E_strain + E_starin_b, linestyle="dashdot", color="gray")
 
-    plt.title("Norminal Stress - Strain Curve of " + MATERIAL_MAPPER[material] + " (Strain Gauge)")
+    # plt.title("Norminal Stress - Strain Curve of " + MATERIAL_MAPPER[material] + " (Strain Gauge)")
     plt.xlabel("Strain [%]")
     plt.ylabel("Stress [MPa]")
     plt.ylim([tensile_strength * (-0.1), tensile_strength * 1.2])
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
-    plt.savefig(path + 'NSSG.png')
+    plt.savefig(path + 'NSSG.pdf')
     # plt.show()
 
     # ストローク
@@ -158,20 +158,20 @@ def plotNorminalSSCurve(df, tensile_list, E_list, Y_list, brokenPoint, material)
     if material in WITH_UPPER_YIELD_POINT:
         plt.plot(x2, x2 * E_strain_from_stroke + E_strain_from_stroke_b, linestyle="dashdot", color="gray")
     elif material in POLYMERS:
-        pass
+        plt.plot([0, 0.8*tensile_strain_from_stroke], [0,0.8*E_strain_from_stroke * tensile_strain_from_stroke], linestyle="dashdot", color="gray")
     else:
         plt.plot(x2, (x2 - 0.2) * E_strain_from_stroke + E_strain_from_stroke_b, linestyle="dashdot", color="gray")
 
     if brokenPoint[0] is not None:
         plt.plot(brokenPoint[0], brokenPoint[1], marker="x", color="blue")
 
-    plt.title("Norminal Stress - Strain Curve of " + MATERIAL_MAPPER[material] + " (Stroke)")
+    # plt.title("Norminal Stress - Strain Curve of " + MATERIAL_MAPPER[material] + " (Stroke)")
     plt.xlabel("Strain [%]")
     plt.ylabel("Stress [MPa]")
     plt.ylim([tensile_strength * (-0.1), tensile_strength * 1.2])
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
-    plt.savefig(path + 'NSSS.png')
+    plt.savefig(path + 'NSSS.pdf')
     # plt.show()
 
 
@@ -188,25 +188,25 @@ def plotTrueSSCurve(df, material):
     # 歪みゲージ
     plt.figure()
     plt.plot(x1,y1, label = "Strain Gauge", color=COLOR)
-    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material] + " (Strain Gauge)")
+    # plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material] + " (Strain Gauge)")
     plt.xlabel("Strain [%]")
     plt.ylabel("Stress [MPa]")
     plt.ylim([max(y1) * (-0.1), max(y1) * 1.2])
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
-    plt.savefig(path + 'TSSG.png')
+    plt.savefig(path + 'TSSG.pdf')
     # plt.show()
 
     # ストローク
     plt.figure()
     plt.plot(x2,y2, label = "Stroke", color=COLOR)
-    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material] + " (Stroke)")
+    # plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material] + " (Stroke)")
     plt.xlabel("Strain [%]")
     plt.ylabel("Stress [MPa]")
     plt.ylim([max(y2) * (-0.1), max(y2) * 1.2])
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
-    plt.savefig(path + 'TSSS.png')
+    plt.savefig(path + 'TSSS.pdf')
     # plt.show()
 
 
@@ -223,28 +223,28 @@ def plotLogTrueSSCurve(df, linePoint, material):
     # 歪みゲージ
     plt.figure()
     plt.plot(x1,y1, label = "Strain Gauge", color=COLOR)
-    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material] + " (Strain Gauge)")
+    # plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material] + " (Strain Gauge)")
     plt.xlabel("Strain [%]")
     plt.xscale('log')
     plt.ylabel("Stress [MPa]")
     plt.yscale('log')
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
-    plt.savefig(path + 'LTSSG.png')
+    plt.savefig(path + 'LTSSG.pdf')
     # plt.show()
 
     # ストローク
     plt.figure()
     plt.plot(x2,y2, label = "Stroke", color=COLOR)
     plt.plot(linePoint[0],linePoint[1], linestyle = "dashed", color="gray" )
-    plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material] + " (Stroke)")
+    # plt.title("True Stress - True Strain Curve of " + MATERIAL_MAPPER[material] + " (Stroke)")
     plt.xlabel("Strain [%]")
     plt.xscale('log')
     plt.ylabel("Stress [MPa]")
     plt.yscale('log')
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
-    plt.savefig(path + 'LTSSS.png')
+    plt.savefig(path + 'LTSSS.pdf')
     # plt.show()
 
 
