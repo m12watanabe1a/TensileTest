@@ -146,6 +146,7 @@ def plotNorminalSSCurve(df, tensile_list, E_list, Y_list, brokenPoint, material)
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
     plt.savefig(path + 'NSSG.pdf')
+    # plt.savefig(path + 'NSSG.png')
     # plt.show()
 
     # ストローク
@@ -172,6 +173,7 @@ def plotNorminalSSCurve(df, tensile_list, E_list, Y_list, brokenPoint, material)
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
     plt.savefig(path + 'NSSS.pdf')
+    # plt.savefig(path + 'NSSS.png')
     # plt.show()
 
 
@@ -185,6 +187,7 @@ def plotTrueSSCurve(df, material):
     x2 = np.log(1 + df["strain from stroke [%]"] /100) * 100
     y2 = df["stress [MPa]"] * (1 + df["strain from stroke [%]"] / 100)
 
+
     # 歪みゲージ
     plt.figure()
     plt.plot(x1,y1, label = "Strain Gauge", color=COLOR)
@@ -195,6 +198,7 @@ def plotTrueSSCurve(df, material):
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
     plt.savefig(path + 'TSSG.pdf')
+    # plt.savefig(path + 'TSSG.png')
     # plt.show()
 
     # ストローク
@@ -207,6 +211,7 @@ def plotTrueSSCurve(df, material):
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
     plt.savefig(path + 'TSSS.pdf')
+    # plt.savefig(path + 'TSSS.png')
     # plt.show()
 
 
@@ -231,6 +236,7 @@ def plotLogTrueSSCurve(df, linePoint, material):
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
     plt.savefig(path + 'LTSSG.pdf')
+    # plt.savefig(path + 'LTSSG.png')
     # plt.show()
 
     # ストローク
@@ -245,6 +251,7 @@ def plotLogTrueSSCurve(df, linePoint, material):
     # plt.legend(bbox_to_anchor=(1, 1), loc='upper right')
     plt.grid()
     plt.savefig(path + 'LTSSS.pdf')
+    # plt.savefig(path + 'LTSSS.png')
     # plt.show()
 
 
